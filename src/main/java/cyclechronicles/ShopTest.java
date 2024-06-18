@@ -1,52 +1,63 @@
+package cyclechronicles;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+public class ShopTest {
 
-class ShopTest {
     private Shop shop;
-    private Order order;
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         shop = new Shop();
-        order = Mockito.mock(Order.class);
     }
 
     @Test
-    void testAcceptOtherBikeNoOpenOrdersLessThanFiveTotal() {
-        Mockito.when(order.getBikeType()).thenReturn("Mountain");
-        Mockito.when(order.getCustomer().getOpenOrders()).thenReturn(0);
-        assertTrue(shop.accept(order));
+    public void testRepair_TakeOldestPendingOrder() {
+        Order orderToRepair = mock(Order.class);
+        when(shop.repair()).thenReturn(Optional.of(orderToRepair));
+
+        Optional<Order> repairedOrder = shop.repair();
+
+        assertTrue(repairedOrder.isPresent());
+        assertEquals(orderToRepair, repairedOrder.get());
     }
 
     @Test
-    void testRejectEBike() {
-        Mockito.when(order.getBikeType()).thenReturn("E-Bike");
-        assertFalse(shop.accept(order));
+    public void testRepair_NoPendingOrders() {
+        when(shop.repair()).thenReturn(Optional.empty());
+
+        Optional<Order> repairedOrder = shop.repair();
+
+        assertFalse(repairedOrder.isPresent());
     }
 
     @Test
-    void testRejectGravelBike() {
-        Mockito.when(order.getBikeType()).thenReturn("Gravel");
-        assertFalse(shop.accept(order));
+    public void testDeliver_FindCompletedOrderForCustomer() {
+        String customerName = "John Doe";
+        Customer customer = mock(Customer.class);
+        when(customer.getName()).thenReturn(customerName);
+
+        Order completedOrder = mock(Order.class);
+        when(completedOrder.getCustomer()).thenReturn(customer);
+
+        shop.deliver(customerName);
+        Optional<Order> deliveredOrder = shop.deliver(customerName);
+
+        assertTrue(deliveredOrder.isPresent());
+        assertEquals(completedOrder, deliveredOrder.get());
     }
 
     @Test
-    void testRejectCustomerHasOpenOrders() {
-        Mockito.when(order.getBikeType()).thenReturn("Mountain");
-        Mockito.when(order.getCustomer().getOpenOrders()).thenReturn(1);
-        assertFalse(shop.accept(order));
-    }
+    public void testDeliver_NoCompletedOrderForCustomer() {
+        String customerName = "Jane Smith";
 
-    @Test
-    void testRejectTooManyTotalOrders() {
-        for (int i = 0; i < 4; i++) {
-            shop.accept(Mockito.mock(Order.class));
-        }
-        Mockito.when(order.getBikeType()).thenReturn("Mountain");
-        assertFalse(shop.accept(order));
+        Optional<Order> deliveredOrder = shop.deliver(customerName);
+
+        assertFalse(deliveredOrder.isPresent());
     }
 }
